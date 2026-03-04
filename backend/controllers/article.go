@@ -97,9 +97,8 @@ func (ac *ArticleController) GetArticles(c *gin.Context) {
 	}
 
 	var articleResults []ArticleListResult
-	result := ac.DB.Model(&models.Article{}).
+	result := query.
 		Select("id, title, slug, summary, cover_image, category_id, tags, view_count, like_count, is_published, is_pinned, read_time, created_at").
-		Where("is_published = ?", true).
 		Preload("Category", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, name, slug")
 		}).
