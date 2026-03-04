@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章归档 - Tech Blog</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* 防止暗色模式闪白 */
+        html { visibility: hidden; }
+        html.theme-loaded { visibility: visible; }
+    </style>
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.className = 'theme-loaded';
+        })();
+    </script>
+</head>
+<body data-theme="light">
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">
+                    <span class="logo-icon">AI</span>
+                    <span class="logo-text">Tech Blog</span>
+                </a>
+                <div class="nav-links">
+                    <a href="/" class="nav-link">首页</a>
+                    <a href="/archives.html" class="nav-link active">归档</a>
+                    <a href="/about.html" class="nav-link">关于</a>
+                    <a href="/admin.html" class="nav-link">管理</a>
+                </div>
+                <div class="nav-actions">
+                    <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">
+                        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main archives-page">
+        <div class="container">
+            <section class="archives-header">
+                <h1 class="page-title">文章归档</h1>
+                <p class="page-subtitle">时间轴上的每一篇文章</p>
+            </section>
+
+            <section class="archives-content" id="archives-content">
+                <!-- 归档内容将通过JS加载 -->
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2026 Tech Blog. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadArchives();
+        });
+
+        async function loadArchives() {
+            const container = document.getElementById('archives-content');
+            try {
+                const { data } = await api('/archives');
+                if (data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(year => `
+                        <div class="archive-year">
+                            <div class="archive-year-header">
+                                <h2 class="archive-year-title">${year.year}</h2>
+                                <span class="archive-year-count">${year.count} 篇文章</span>
+                            </div>
+                            <div class="archive-months">
+                                ${year.months.map(month => `
+                                    <div class="archive-month">
+                                        <h3 class="archive-month-title">${month.month}</h3>
+                                        <ul class="archive-articles">
+                                            ${month.articles.map(article => `
+                                                <li class="archive-article">
+                                                    <a href="/article.html?id=${article.id}" class="archive-article-link">
+                                                        <span class="archive-article-date">${new Date(article.created_at).toLocaleDateString('zh-CN')}</span>
+                                                        <span class="archive-article-title">${article.title}</span>
+                                                    </a>
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <p>暂无文章</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Load archives failed:', error);
+                container.innerHTML = `<p class="error">加载失败</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

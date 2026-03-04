@@ -1,0 +1,95 @@
+{
+    "name": "Tech Blog - 现代技术博客",
+    "short_name": "TechBlog",
+    "description": "探索前沿技术，分享编程心得，记录成长历程",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#6366f1",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "lang": "zh-CN",
+    "categories": ["technology", "programming", "blog"],
+    "icons": [
+        {
+            "src": "/static/icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable any"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "首页",
+            "short_name": "首页",
+            "description": "访问博客首页",
+            "url": "/",
+            "icons": [{"src": "/static/icons/icon-96x96.png", "sizes": "96x96"}]
+        },
+        {
+            "name": "归档",
+            "short_name": "归档",
+            "description": "查看文章归档",
+            "url": "/archives.html",
+            "icons": [{"src": "/static/icons/icon-96x96.png", "sizes": "96x96"}]
+        },
+        {
+            "name": "关于",
+            "short_name": "关于",
+            "description": "关于博主",
+            "url": "/about.html",
+            "icons": [{"src": "/static/icons/icon-96x96.png", "sizes": "96x96"}]
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/static/screenshots/home.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Tech Blog 首页"
+        }
+    ]
+}

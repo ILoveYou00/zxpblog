@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - Tech Blog</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* 防止暗色模式闪白 - 在CSS加载前就隐藏页面 */
+        html { visibility: hidden; }
+        html.theme-loaded { visibility: visible; }
+        .auth-checking {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-secondary, #f8fafc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .auth-checking .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        /* 验证码行对齐修复 */
+        .captcha-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 20px;
+        }
+        .captcha-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .captcha-row .form-group label {
+            margin-bottom: 10px;
+        }
+        .captcha-row .form-input {
+            height: 48px;
+        }
+        .captcha-image {
+            height: 48px;
+            width: 120px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+            object-fit: contain;
+        }
+        .captcha-image:hover {
+            opacity: 0.8;
+        }
+        .captcha-loading {
+            width: 120px;
+            height: 48px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .locked-message {
+            background: var(--error-bg, #fef2f2);
+            border: 1px solid var(--error-border, #fecaca);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            color: var(--error-color, #dc2626);
+            display: none;
+        }
+        .locked-message.show {
+            display: block;
+        }
+        /* OAuth 登录按钮样式 */
+        .oauth-divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            color: var(--text-muted);
+        }
+        .oauth-divider::before,
+        .oauth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+        .oauth-divider span {
+            padding: 0 16px;
+            font-size: 0.85rem;
+        }
+        .oauth-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn-github {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 14px 28px;
+            background: #24292e;
+            color: white;
+            border-radius: var(--radius-lg);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        .btn-github:hover {
+            background: #2f363d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(36, 41, 46, 0.3);
+            color: white;
+        }
+        .btn-github svg {
+            flex-shrink: 0;
+        }
+    </style>
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.className = 'theme-loaded';
+        })();
+    </script>
+</head>
+<body>
+    <script>
+        // 在 body 存在后设置主题
+        (function() {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <!-- 登录检查加载状态 -->
+    <div class="auth-checking" id="auth-checking">
+        <div class="loading-spinner"></div>
+    </div>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">
+                    <span class="logo-icon">AI</span>
+                    <span class="logo-text">Tech Blog</span>
+                </a>
+                <div class="nav-links">
+                    <a href="/" class="nav-link">首页</a>
+                    <a href="/about.html" class="nav-link">关于</a>
+                    <a href="/admin.html" class="nav-link">管理</a>
+                </div>
+                <div class="nav-actions">
+                    <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">
+                        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main login-page">
+        <div class="container">
+            <div class="login-container">
+                <div class="login-card">
+                    <h1 class="login-title">管理员登录</h1>
+                    <div class="locked-message" id="locked-message">
+                        <strong>账户已锁定</strong>
+                        <p id="locked-reason">登录失败次数过多，请稍后再试。</p>
+                    </div>
+                    <form id="login-form" class="login-form">
+                        <div class="form-group">
+                            <label for="username">用户名</label>
+                            <input type="text" id="username" name="username" class="form-input" placeholder="请输入用户名" required autocomplete="username">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">密码</label>
+                            <input type="password" id="password" name="password" class="form-input" placeholder="请输入密码" required autocomplete="current-password">
+                        </div>
+                        <div class="captcha-row">
+                            <div class="form-group">
+                                <label for="captcha">验证码</label>
+                                <input type="text" id="captcha" name="captcha" class="form-input" placeholder="请输入验证码" required maxlength="4" autocomplete="off">
+                            </div>
+                            <div class="captcha-loading" id="captcha-loading">加载中...</div>
+                            <img id="captcha-image" class="captcha-image" alt="验证码" title="点击刷新" style="display: none;">
+                        </div>
+                        <div class="form-error" id="form-error"></div>
+                        <button type="submit" class="btn btn-primary btn-block" id="login-btn">登录</button>
+                    </form>
+
+                    <!-- GitHub OAuth Login -->
+                    <div class="oauth-divider" id="oauth-divider" style="display: none;">
+                        <span>或</span>
+                    </div>
+                    <div class="oauth-buttons" id="oauth-buttons" style="display: none;">
+                        <a href="/api/auth/oauth/github" class="btn btn-github" id="github-login-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                            使用 GitHub 登录
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2026 Tech Blog. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        let captchaId = '';
+
+        async function loadCaptcha() {
+            const loading = document.getElementById('captcha-loading');
+            const img = document.getElementById('captcha-image');
+
+            try {
+                const response = await fetch('/api/auth/captcha');
+                const data = await response.json();
+
+                if (response.ok) {
+                    captchaId = data.captcha_id;
+                    img.src = data.captcha_image;
+                    img.style.display = 'block';
+                    loading.style.display = 'none';
+                    document.getElementById('captcha').value = '';
+                } else {
+                    loading.textContent = '加载失败';
+                }
+            } catch (error) {
+                loading.textContent = '加载失败';
+                console.error('Load captcha error:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check if already logged in
+            const session = await checkSession();
+            if (session.authenticated) {
+                window.location.href = '/admin.html';
+                return;
+            }
+
+            // 未登录，移除加载状态并显示登录表单
+            document.getElementById('auth-checking')?.remove();
+
+            // 检查 OAuth 状态并显示按钮
+            try {
+                const oauthResponse = await fetch('/api/auth/oauth/status');
+                const oauthData = await oauthResponse.json();
+                if (oauthData.github_enabled) {
+                    document.getElementById('oauth-divider').style.display = 'flex';
+                    document.getElementById('oauth-buttons').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Failed to check OAuth status:', error);
+            }
+
+            // 加载验证码
+            await loadCaptcha();
+
+            // 检查 URL 中的错误参数（来自 OAuth 回调）
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorParam = urlParams.get('error');
+            if (errorParam) {
+                const errorEl = document.getElementById('form-error');
+                errorEl.textContent = errorParam;
+                errorEl.style.display = 'block';
+                // 清除 URL 中的错误参数
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // 点击验证码刷新
+            document.getElementById('captcha-image').addEventListener('click', loadCaptcha);
+
+            // Login form handler
+            document.getElementById('login-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const captcha = document.getElementById('captcha').value.toUpperCase();
+                const errorEl = document.getElementById('form-error');
+                const lockedEl = document.getElementById('locked-message');
+                const loginBtn = document.getElementById('login-btn');
+
+                // 隐藏之前的错误
+                errorEl.style.display = 'none';
+                lockedEl.classList.remove('show');
+
+                // 禁用按钮
+                loginBtn.disabled = true;
+                loginBtn.textContent = '登录中...';
+
+                try {
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username,
+                            password,
+                            captcha,
+                            captcha_id: captchaId
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        window.location.href = '/admin.html';
+                    } else if (response.status === 429 || data.locked) {
+                        // 账户被锁定
+                        lockedEl.classList.add('show');
+                        document.getElementById('locked-reason').textContent = data.error;
+                        // 显示倒计时
+                        if (data.remaining_seconds) {
+                            let remaining = data.remaining_seconds;
+                            const countdown = setInterval(() => {
+                                remaining--;
+                                if (remaining <= 0) {
+                                    clearInterval(countdown);
+                                    lockedEl.classList.remove('show');
+                                    loadCaptcha();
+                                } else {
+                                    document.getElementById('locked-reason').textContent =
+                                        `登录失败次数过多，请 ${Math.floor(remaining / 60)} 分 ${remaining % 60} 秒后再试。`;
+                                }
+                            }, 1000);
+                        }
+                        loadCaptcha();
+                    } else {
+                        errorEl.textContent = data.error || '登录失败';
+                        if (data.attempts_remaining) {
+                            errorEl.textContent += `（剩余 ${data.attempts_remaining} 次尝试机会）`;
+                        }
+                        errorEl.style.display = 'block';
+                        loadCaptcha();
+                    }
+                } catch (error) {
+                    errorEl.textContent = '网络错误，请重试';
+                    errorEl.style.display = 'block';
+                } finally {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '登录';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

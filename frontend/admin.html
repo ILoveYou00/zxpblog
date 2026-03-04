@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - Tech Blog</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.7/quill.snow.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <style>
+        /* 防止暗色模式闪白 - 在CSS加载前就隐藏页面 */
+        html { visibility: hidden; }
+        html.theme-loaded { visibility: visible; }
+        /* 登录检查中显示加载状态 */
+        .auth-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-secondary, #f8fafc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .auth-loading .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.className = 'theme-loaded';
+        })();
+    </script>
+</head>
+<body>
+    <script>
+        // 在 body 存在后设置主题
+        (function() {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <!-- 登录检查加载状态 -->
+    <div class="auth-loading" id="auth-loading">
+        <div class="loading-spinner"></div>
+    </div>
+    <header class="header admin-header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">
+                    <span class="logo-icon">AI</span>
+                    <span class="logo-text">Tech Blog</span>
+                </a>
+                <div class="nav-links">
+                    <a href="/" class="nav-link">前台首页</a>
+                    <a href="/admin.html" class="nav-link active">文章管理</a>
+                </div>
+                <div class="nav-actions">
+                    <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">
+                        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="2" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    <span id="admin-user" class="admin-user"></span>
+                    <button id="logout-btn" class="btn btn-outline">退出登录</button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main admin-page">
+        <div class="container">
+            <!-- Admin Tabs -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="articles">文章管理</button>
+                <button class="admin-tab" data-tab="categories">分类管理</button>
+                <button class="admin-tab" data-tab="tags">标签管理</button>
+                <button class="admin-tab" data-tab="comments">评论管理</button>
+                <button class="admin-tab" data-tab="announcements">公告管理</button>
+                <button class="admin-tab" data-tab="friends">友链管理</button>
+                <button class="admin-tab" data-tab="about">关于页面</button>
+                <button class="admin-tab" data-tab="stats">统计</button>
+            </div>
+
+            <!-- Articles Tab -->
+            <div class="admin-content" id="articles-tab">
+                <div class="admin-header-row">
+                    <h2>文章列表</h2>
+                    <button id="new-article-btn" class="btn btn-primary">新建文章</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>标题</th>
+                                <th>分类</th>
+                                <th>状态</th>
+                                <th>置顶</th>
+                                <th>浏览/点赞</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="articles-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="articles-pagination"></div>
+            </div>
+
+            <!-- Categories Tab -->
+            <div class="admin-content hidden" id="categories-tab">
+                <div class="admin-header-row">
+                    <h2>分类列表</h2>
+                    <button id="new-category-btn" class="btn btn-primary">新建分类</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>Slug</th>
+                                <th>文章数</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categories-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tags Tab -->
+            <div class="admin-content hidden" id="tags-tab">
+                <div class="admin-header-row">
+                    <h2>标签列表</h2>
+                    <button id="new-tag-btn" class="btn btn-primary">新建标签</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>Slug</th>
+                                <th>文章数</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tags-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Comments Tab -->
+            <div class="admin-content hidden" id="comments-tab">
+                <div class="admin-header-row">
+                    <h2>评论列表</h2>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>文章</th>
+                                <th>昵称</th>
+                                <th>内容</th>
+                                <th>状态</th>
+                                <th>时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comments-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="comments-pagination"></div>
+            </div>
+
+            <!-- Announcements Tab -->
+            <div class="admin-content hidden" id="announcements-tab">
+                <div class="admin-header-row">
+                    <h2>公告列表</h2>
+                    <button id="new-announcement-btn" class="btn btn-primary">新建公告</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>标题</th>
+                                <th>内容</th>
+                                <th>状态</th>
+                                <th>有效期</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="announcements-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Friends Tab -->
+            <div class="admin-content hidden" id="friends-tab">
+                <div class="admin-header-row">
+                    <h2>友情链接</h2>
+                    <button id="new-friend-btn" class="btn btn-primary">添加友链</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>链接</th>
+                                <th>描述</th>
+                                <th>排序</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="friends-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Stats Tab -->
+            <div class="admin-content hidden" id="stats-tab">
+                <h2>数据统计</h2>
+                <div class="stats-dashboard">
+                    <!-- 概览卡片 -->
+                    <div class="stats-overview">
+                        <div class="stat-card-large">
+                            <div class="stat-icon stat-icon-views">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-total-views">0</span>
+                                <span class="stat-label">总浏览量</span>
+                            </div>
+                        </div>
+                        <div class="stat-card-large">
+                            <div class="stat-icon stat-icon-articles">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-articles">0</span>
+                                <span class="stat-label">文章总数</span>
+                            </div>
+                        </div>
+                        <div class="stat-card-large">
+                            <div class="stat-icon stat-icon-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-likes">0</span>
+                                <span class="stat-label">总点赞数</span>
+                            </div>
+                        </div>
+                        <div class="stat-card-large">
+                            <div class="stat-icon stat-icon-comments">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-comments">0</span>
+                                <span class="stat-label">评论数</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 今日统计 -->
+                    <div class="stats-today">
+                        <div class="today-stat">
+                            <span class="today-label">今日访问</span>
+                            <span class="today-value" id="stat-today-views">0</span>
+                        </div>
+                        <div class="today-stat">
+                            <span class="today-label">今日访客</span>
+                            <span class="today-value" id="stat-today-visitors">0</span>
+                        </div>
+                        <div class="today-stat">
+                            <span class="today-label">分类数</span>
+                            <span class="today-value" id="stat-categories">0</span>
+                        </div>
+                        <div class="today-stat">
+                            <span class="today-label">标签数</span>
+                            <span class="today-value" id="stat-tags">0</span>
+                        </div>
+                    </div>
+
+                    <!-- 图表区域 -->
+                    <div class="stats-charts">
+                        <!-- 访问趋势 -->
+                        <div class="chart-card">
+                            <h3 class="chart-title">近7天访问趋势</h3>
+                            <div class="chart-container" id="views-chart">
+                                <div class="chart-bars" id="chart-bars"></div>
+                            </div>
+                        </div>
+
+                        <!-- 热门文章 -->
+                        <div class="chart-card">
+                            <h3 class="chart-title">热门文章 TOP 5</h3>
+                            <div class="hot-articles-list" id="hot-articles-list"></div>
+                        </div>
+
+                        <!-- 最新文章 -->
+                        <div class="chart-card">
+                            <h3 class="chart-title">最新文章</h3>
+                            <div class="latest-articles-list" id="latest-articles-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Tab -->
+            <div class="admin-content hidden" id="about-tab">
+                <div class="admin-header-row">
+                    <h2>关于页面设置</h2>
+                </div>
+                <form id="about-form" class="about-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="about-name">博主名称</label>
+                            <input type="text" id="about-name" class="form-input" placeholder="你的名字">
+                        </div>
+                        <div class="form-group">
+                            <label for="about-avatar">头像URL</label>
+                            <input type="text" id="about-avatar" class="form-input" placeholder="https://example.com/avatar.jpg">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="about-bio">个人简介</label>
+                        <input type="text" id="about-bio" class="form-input" placeholder="一句话介绍自己">
+                    </div>
+                    <div class="form-group">
+                        <label for="about-skills">技术栈（逗号分隔）</label>
+                        <input type="text" id="about-skills" class="form-input" placeholder="Go, JavaScript, Vue.js, MySQL">
+                    </div>
+                    <div class="form-group">
+                        <label for="about-content">关于我（支持Markdown）</label>
+                        <textarea id="about-content" class="form-textarea" rows="8" placeholder="写点什么介绍自己..."></textarea>
+                    </div>
+                    <h3 style="margin: 24px 0 16px; font-size: 1.1rem;">联系方式</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="about-email">邮箱</label>
+                            <input type="email" id="about-email" class="form-input" placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="about-github">GitHub</label>
+                            <input type="text" id="about-github" class="form-input" placeholder="https://github.com/username">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="about-twitter">Twitter</label>
+                            <input type="text" id="about-twitter" class="form-input" placeholder="https://twitter.com/username">
+                        </div>
+                        <div class="form-group">
+                            <label for="about-website">个人网站</label>
+                            <input type="text" id="about-website" class="form-input" placeholder="https://yourwebsite.com">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">保存设置</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Article Editor Modal -->
+    <div class="modal" id="article-modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="modal-title">新建文章</h3>
+                <div class="auto-save-status" id="auto-save-status">
+                    <span class="auto-save-dot"></span>
+                    <span class="auto-save-text">自动保存已就绪</span>
+                </div>
+                <button class="modal-close" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Draft Recovery Banner -->
+                <div class="draft-recovery-banner hidden" id="draft-recovery-banner">
+                    <p>发现未保存的草稿，是否恢复？</p>
+                    <div class="draft-recovery-actions">
+                        <button type="button" class="btn btn-outline" id="discard-draft-btn">放弃</button>
+                        <button type="button" class="btn btn-primary" id="restore-draft-btn">恢复</button>
+                    </div>
+                </div>
+                <form id="article-form">
+                    <input type="hidden" id="article-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="article-title">标题</label>
+                            <input type="text" id="article-title" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="article-category">分类</label>
+                            <select id="article-category" class="form-input">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="article-slug">Slug (URL友好标识)</label>
+                            <input type="text" id="article-slug" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>标签</label>
+                            <div id="article-tags-container" class="tags-select-container">
+                                <!-- 标签复选框将在这里动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="article-summary">摘要</label>
+                        <div class="summary-row">
+                            <textarea id="article-summary" class="form-textarea" rows="2"></textarea>
+                            <button type="button" class="btn btn-outline ai-summary-btn" onclick="aiGenerateSummary()" title="AI 生成摘要">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                                    <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+                                </svg>
+                                AI生成
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="article-format">内容格式</label>
+                            <select id="article-format" class="form-input">
+                                <option value="html">富文本 (Quill)</option>
+                                <option value="markdown">Markdown</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" id="quill-editor-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label style="margin: 0;">内容</label>
+                            <div class="ai-writing-tools" id="ai-writing-tools-quill" style="margin: 0; padding: 0; border: none;">
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssist('continue')">续写</button>
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssist('polish')">润色</button>
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssist('summarize')">总结</button>
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssist('expand')">扩展</button>
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssist('title')">生成标题</button>
+                            </div>
+                        </div>
+                        <div id="editor"></div>
+                    </div>
+                    <div class="form-group hidden" id="markdown-editor-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label style="margin: 0;">内容 (Markdown)</label>
+                            <div class="ai-writing-tools" id="ai-writing-tools-md" style="margin: 0; padding: 0; border: none;">
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssistMD('continue')">续写</button>
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssistMD('polish')">润色</button>
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssistMD('summarize')">总结</button>
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssistMD('expand')">扩展</button>
+                                <button type="button" class="ai-tool-btn" onclick="aiWritingAssistMD('title')">生成标题</button>
+                            </div>
+                        </div>
+                        <textarea id="markdown-editor"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="article-cover">封面图片URL</label>
+                            <input type="text" id="article-cover" class="form-input">
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="article-published">
+                                <span>发布文章</span>
+                            </label>
+                            <label class="checkbox-label" style="margin-left: 16px;">
+                                <input type="checkbox" id="article-pinned">
+                                <span>置顶</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-btn">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div class="modal" id="category-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="category-modal-title">新建分类</h3>
+                <button class="modal-close" id="close-category-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="category-form">
+                    <input type="hidden" id="category-id">
+                    <div class="form-group">
+                        <label for="category-name">名称</label>
+                        <input type="text" id="category-name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="category-slug">Slug</label>
+                        <input type="text" id="category-slug" class="form-input">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-category-btn">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tag Modal -->
+    <div class="modal" id="tag-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tag-modal-title">新建标签</h3>
+                <button class="modal-close" id="close-tag-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="tag-form">
+                    <input type="hidden" id="tag-id">
+                    <div class="form-group">
+                        <label for="tag-name">名称</label>
+                        <input type="text" id="tag-name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tag-slug">Slug</label>
+                        <input type="text" id="tag-slug" class="form-input">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-tag-btn">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Announcement Modal -->
+    <div class="modal" id="announcement-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="announcement-modal-title">新建公告</h3>
+                <button class="modal-close" id="close-announcement-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="announcement-form">
+                    <input type="hidden" id="announcement-id">
+                    <div class="form-group">
+                        <label for="announcement-title">标题</label>
+                        <input type="text" id="announcement-title" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="announcement-content">内容</label>
+                        <textarea id="announcement-content" class="form-textarea" rows="3" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="announcement-start">开始时间</label>
+                            <input type="datetime-local" id="announcement-start" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="announcement-end">结束时间</label>
+                            <input type="datetime-local" id="announcement-end" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="announcement-active" checked>
+                            <span>启用</span>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-announcement-btn">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Friend Link Modal -->
+    <div class="modal" id="friend-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="friend-modal-title">添加友链</h3>
+                <button class="modal-close" id="close-friend-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="friend-form">
+                    <input type="hidden" id="friend-id">
+                    <div class="form-group">
+                        <label for="friend-name">名称</label>
+                        <input type="text" id="friend-name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="friend-url">链接</label>
+                        <input type="url" id="friend-url" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="friend-logo">Logo URL</label>
+                        <input type="text" id="friend-logo" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="friend-desc">描述</label>
+                        <input type="text" id="friend-desc" class="form-input">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="friend-sort">排序</label>
+                            <input type="number" id="friend-sort" class="form-input" value="0">
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="friend-active" checked>
+                                <span>启用</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-friend-btn">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2026 Tech Blog. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/ai.js"></script>
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

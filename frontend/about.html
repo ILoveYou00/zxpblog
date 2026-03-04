@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于 - Tech Blog</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* 防止暗色模式闪白 */
+        html { visibility: hidden; }
+        html.theme-loaded { visibility: visible; }
+    </style>
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.className = 'theme-loaded';
+        })();
+    </script>
+</head>
+<body data-theme="light">
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">
+                    <span class="logo-icon">AI</span>
+                    <span class="logo-text">Tech Blog</span>
+                </a>
+                <div class="nav-links">
+                    <a href="/" class="nav-link">首页</a>
+                    <a href="/archives.html" class="nav-link">归档</a>
+                    <a href="/about.html" class="nav-link active">关于</a>
+                    <a href="/admin.html" class="nav-link">管理</a>
+                </div>
+                <div class="nav-actions">
+                    <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">
+                        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main about-page">
+        <div class="container">
+            <section class="about-hero">
+                <div class="about-avatar" id="about-avatar-container">
+                    <div class="avatar-placeholder" id="avatar-placeholder">B</div>
+                </div>
+                <h1 class="about-name" id="about-name">加载中...</h1>
+                <p class="about-bio" id="about-bio"></p>
+            </section>
+
+            <section class="about-content" id="about-content">
+                <!-- 内容将从API加载 -->
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2026 Tech Blog. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadAboutPage();
+        });
+
+        async function loadAboutPage() {
+            try {
+                const { data } = await api('/about');
+                const about = data.data;
+
+                // 更新标题
+                document.title = `关于 - ${about.name || 'Tech Blog'}`;
+
+                // 更新头像
+                const avatarContainer = document.getElementById('about-avatar-container');
+                if (about.avatar) {
+                    avatarContainer.innerHTML = `<img src="${about.avatar}" alt="${about.name}" class="about-avatar-img">`;
+                } else {
+                    const placeholder = document.getElementById('avatar-placeholder');
+                    if (placeholder && about.name) {
+                        placeholder.textContent = about.name.charAt(0).toUpperCase();
+                    }
+                }
+
+                // 更新名字和简介
+                document.getElementById('about-name').textContent = about.name || '博主';
+                document.getElementById('about-bio').textContent = about.bio || '';
+
+                // 构建内容
+                let contentHtml = '';
+
+                // 关于我
+                if (about.about_me) {
+                    const aboutMeHtml = marked.parse(about.about_me);
+                    contentHtml += `
+                        <div class="about-card">
+                            <h2>关于我</h2>
+                            <div class="about-me-content">${aboutMeHtml}</div>
+                        </div>
+                    `;
+                }
+
+                // 技术栈
+                if (about.skills) {
+                    const skills = about.skills.split(',').map(s => s.trim()).filter(Boolean);
+                    contentHtml += `
+                        <div class="about-card">
+                            <h2>技术栈</h2>
+                            <div class="tech-tags">
+                                ${skills.map(skill => `<span class="tech-tag">${skill}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 联系方式
+                const hasContact = about.email || about.github || about.twitter || about.website;
+                if (hasContact) {
+                    let contactLinks = '';
+
+                    if (about.email) {
+                        contactLinks += `
+                            <a href="mailto:${about.email}" class="contact-link">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                                <span>${about.email}</span>
+                            </a>
+                        `;
+                    }
+
+                    if (about.github) {
+                        contactLinks += `
+                            <a href="${about.github}" target="_blank" rel="noopener" class="contact-link">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                                </svg>
+                                <span>GitHub</span>
+                            </a>
+                        `;
+                    }
+
+                    if (about.twitter) {
+                        contactLinks += `
+                            <a href="${about.twitter}" target="_blank" rel="noopener" class="contact-link">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                </svg>
+                                <span>Twitter</span>
+                            </a>
+                        `;
+                    }
+
+                    if (about.website) {
+                        contactLinks += `
+                            <a href="${about.website}" target="_blank" rel="noopener" class="contact-link">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                </svg>
+                                <span>个人网站</span>
+                            </a>
+                        `;
+                    }
+
+                    contentHtml += `
+                        <div class="about-card">
+                            <h2>联系方式</h2>
+                            <div class="contact-links">${contactLinks}</div>
+                        </div>
+                    `;
+                }
+
+                // 如果没有内容，显示默认
+                if (!contentHtml) {
+                    contentHtml = `
+                        <div class="about-card">
+                            <h2>关于我</h2>
+                            <p>欢迎来到我的个人博客！</p>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('about-content').innerHTML = contentHtml;
+
+            } catch (error) {
+                console.error('Failed to load about page:', error);
+                document.getElementById('about-content').innerHTML = `
+                    <div class="about-card">
+                        <h2>关于我</h2>
+                        <p>欢迎来到我的个人博客！</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

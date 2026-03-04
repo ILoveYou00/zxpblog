@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情 - Tech Blog</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Open Graph Meta Tags (动态更新) -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Tech Blog">
+    <meta property="og:title" content="文章详情 - Tech Blog" id="og-title">
+    <meta property="og:description" content="探索前沿技术，分享编程心得" id="og-description">
+    <meta property="og:url" content="" id="og-url">
+    <meta property="og:image" content="" id="og-image">
+    <meta property="article:published_time" content="" id="og-published-time">
+    <meta property="article:modified_time" content="" id="og-modified-time">
+    <meta property="article:section" content="" id="og-section">
+    <meta property="article:tag" content="" id="og-tag">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="文章详情 - Tech Blog" id="twitter-title">
+    <meta name="twitter:description" content="探索前沿技术，分享编程心得" id="twitter-description">
+    <meta name="twitter:image" content="" id="twitter-image">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" id="json-ld-article">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Tech Blog",
+        "description": "探索前沿技术，分享编程心得",
+        "author": {
+            "@type": "Person",
+            "name": "Tech Blog Author"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Tech Blog",
+            "logo": {
+                "@type": "ImageObject",
+                "url": ""
+            }
+        }
+    }
+    </script>
+
+    <style>
+        /* 防止暗色模式闪白 - 在CSS加载前就隐藏页面 */
+        html { visibility: hidden; }
+        html.theme-loaded { visibility: visible; }
+    </style>
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.className = 'theme-loaded';
+        })();
+    </script>
+</head>
+<body data-theme="light">
+    <!-- Reading Progress Bar -->
+    <div class="reading-progress" id="reading-progress"></div>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="back-to-top" aria-label="返回顶部">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+    </button>
+
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">
+                    <span class="logo-icon">AI</span>
+                    <span class="logo-text">Tech Blog</span>
+                </a>
+                <div class="nav-links">
+                    <a href="/" class="nav-link">首页</a>
+                    <a href="/archives.html" class="nav-link">归档</a>
+                    <a href="/about.html" class="nav-link">关于</a>
+                    <a href="/admin.html" class="nav-link">管理</a>
+                </div>
+                <div class="nav-actions">
+                    <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">
+                        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main article-page">
+        <div class="container">
+            <!-- 文章布局：左侧内容 + 右侧大纲 -->
+            <div class="article-layout">
+                <div class="article-main">
+                    <!-- 文章主体 -->
+                    <article class="article-detail" id="article-content">
+                        <!-- Article content will be loaded here -->
+                    </article>
+
+                    <!-- 文章底部操作栏 -->
+                    <div class="article-footer-actions">
+                        <div class="action-group">
+                            <button class="footer-action-btn" id="like-btn" title="点赞">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                </svg>
+                                <span id="like-count">0</span>
+                            </button>
+                            <button class="footer-action-btn" id="favorite-btn" title="收藏">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                <span>收藏</span>
+                            </button>
+                        </div>
+                        <div class="action-group">
+                            <button class="footer-action-btn share-btn" onclick="shareToWeibo()" title="分享到微博">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M10.098 20c-4.612 0-8.348-2.725-8.348-6.084 0-1.775.89-3.678 2.42-5.336 2.043-2.21 4.417-3.214 5.303-2.244.403.442.48 1.196.188 2.168-.124.424.437.202.437.202 1.69-.67 3.255-.698 3.857.09.323.42.352 1.012.07 1.75-.118.306.065.368.342.29.82-.234 1.522-.264 1.98.01.68.41.673 1.32.073 2.57-.163.34-.01.38.23.32.59-.14 1.09-.16 1.46.01.66.3.87 1.09.47 2.22-.78 2.18-4.18 4.03-8.48 4.03zm-4.05-8.35c-2.197.14-3.89 1.48-3.78 3.01.11 1.52 1.99 2.64 4.19 2.5 2.2-.14 3.89-1.48 3.78-3-.11-1.53-1.99-2.65-4.19-2.51zm2.49 2.62c-.49.73-1.66.99-2.62.59-.95-.4-1.25-1.26-.76-1.94.48-.67 1.58-.92 2.5-.58.94.34 1.32 1.16.88 1.93zm1.29-1.44c-.18.28-.57.38-.87.22-.3-.16-.38-.49-.2-.76.18-.28.55-.38.85-.24.3.15.4.5.22.78zm8.18-5.06c-.32-1.61-1.66-2.75-3.18-2.78l-.24.01c-.25.01-.44.22-.43.46.01.25.22.44.46.43l.18-.01c1.06.02 1.98.82 2.2 1.92.03.13.04.26.04.4 0 .24.19.43.43.43.24 0 .43-.19.43-.43 0-.18-.02-.37-.06-.55l.17.12zm1.88-2.94c-.61-2.73-2.99-4.67-5.7-4.76-.28 0-.52.18-.59.45-.07.27.08.55.35.65l.12.02c2.12.08 3.98 1.58 4.46 3.78.04.2.07.41.08.62.02.27.23.47.5.47h.03c.27-.02.48-.24.47-.51 0-.27-.03-.54-.09-.81l.37.09zm-4.4 3.46c-.2-.73-.82-1.21-1.52-1.22h-.1c-.24.02-.42.22-.41.46.02.24.22.42.46.41h.05c.35.01.67.24.76.58.02.08.03.17.03.26 0 .23.17.42.4.44.23.02.43-.15.45-.38 0-.06 0-.12-.01-.18l-.11.01v-.38z"/>
+                                </svg>
+                            </button>
+                            <button class="footer-action-btn share-btn" onclick="shareToTwitter()" title="分享到Twitter">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                </svg>
+                            </button>
+                            <button class="footer-action-btn share-btn" onclick="copyLink()" title="复制链接">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 相关文章 -->
+                    <section class="related-articles" id="related-articles">
+                        <h3 class="related-title">相关文章</h3>
+                        <div class="related-list" id="related-list"></div>
+                    </section>
+
+                    <!-- 评论区 -->
+                    <section class="comments-section">
+                        <h2 class="comments-title">评论</h2>
+                        <div class="comment-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <input type="text" id="comment-nickname" placeholder="昵称" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="email" id="comment-email" placeholder="邮箱（可选）" class="form-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <textarea id="comment-content" placeholder="写下你的评论..." class="form-textarea" rows="4" required></textarea>
+                            </div>
+                            <button id="submit-comment" class="btn btn-primary">发表评论</button>
+                        </div>
+                        <div class="comments-list" id="comments-list"></div>
+                    </section>
+                </div>
+
+                <!-- 大纲侧边栏 -->
+                <aside class="toc-sidebar" id="toc-sidebar">
+                    <div class="toc-container">
+                        <h4 class="toc-title">目录</h4>
+                        <nav class="toc-nav" id="toc-nav">
+                            <!-- TOC items will be generated here -->
+                        </nav>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2026 Tech Blog. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script>
+        let currentArticleId = null;
+        let sessionId = localStorage.getItem('session_id') || generateSessionId();
+        let isLiking = false; // 防止重复点击
+
+        function generateSessionId() {
+            const id = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('session_id', id);
+            return id;
+        }
+
+        // 点赞功能
+        document.getElementById('like-btn').addEventListener('click', async function() {
+            if (!currentArticleId || isLiking) return;
+            isLiking = true;
+
+            try {
+                const { response, data } = await api(`/articles/${currentArticleId}/like`, { method: 'POST' });
+                if (response.ok) {
+                    document.getElementById('like-count').textContent = data.like_count;
+                    this.classList.add('liked');
+                } else if (data.error === 'Already liked') {
+                    const unlikeRes = await api(`/articles/${currentArticleId}/like`, { method: 'DELETE' });
+                    if (unlikeRes.response.ok) {
+                        document.getElementById('like-count').textContent = unlikeRes.data.like_count;
+                        this.classList.remove('liked');
+                    }
+                }
+            } catch (error) {
+                console.error('Like failed:', error);
+            } finally {
+                setTimeout(() => { isLiking = false; }, 300);
+            }
+        });
+
+        // 收藏功能
+        document.getElementById('favorite-btn').addEventListener('click', async function() {
+            if (!currentArticleId) return;
+            const isFavorited = this.classList.contains('favorited');
+            try {
+                const method = isFavorited ? 'DELETE' : 'POST';
+                const { response } = await api(`/articles/${currentArticleId}/favorite`, {
+                    method: method,
+                    headers: { 'X-Session-ID': sessionId }
+                });
+                if (response.ok) {
+                    this.classList.toggle('favorited');
+                    this.querySelector('span').textContent = this.classList.contains('favorited') ? '已收藏' : '收藏';
+                }
+            } catch (error) {
+                console.error('Favorite failed:', error);
+            }
+        });
+
+        async function checkLikeFavoriteStatus(articleId) {
+            try {
+                const [likeRes, favRes] = await Promise.all([
+                    api(`/articles/${articleId}/liked`),
+                    api(`/articles/${articleId}/favorited`, { headers: { 'X-Session-ID': sessionId } })
+                ]);
+                if (likeRes.data.liked) {
+                    document.getElementById('like-btn').classList.add('liked');
+                }
+                if (favRes.data.favorited) {
+                    document.getElementById('favorite-btn').classList.add('favorited');
+                    document.querySelector('#favorite-btn span').textContent = '已收藏';
+                }
+            } catch (error) {
+                console.error('Check status failed:', error);
+            }
+        }
+
+        async function recordHistory(articleId) {
+            try {
+                await api('/history', {
+                    method: 'POST',
+                    headers: { 'X-Session-ID': sessionId },
+                    body: JSON.stringify({ article_id: parseInt(articleId) })
+                });
+            } catch (error) {
+                console.error('Record history failed:', error);
+            }
+        }
+
+        function addCopyButtons() {
+            document.querySelectorAll('.article-detail-content pre').forEach(pre => {
+                // 检测代码语言
+                const codeEl = pre.querySelector('code');
+                let lang = '';
+                if (codeEl && codeEl.className) {
+                    const langMatch = codeEl.className.match(/language-(\w+)/);
+                    if (langMatch) {
+                        lang = langMatch[1];
+                    }
+                }
+                if (!lang && codeEl && codeEl.classList.length > 0) {
+                    for (const cls of codeEl.classList) {
+                        if (cls !== 'hljs' && !cls.startsWith('language-')) {
+                            lang = cls;
+                            break;
+                        }
+                    }
+                }
+                if (!lang) lang = 'CODE';
+
+                // 包装器
+                pre.style.position = 'relative';
+
+                // 创建复制按钮
+                const btn = document.createElement('button');
+                btn.className = 'copy-btn';
+                btn.type = 'button';
+                btn.setAttribute('aria-label', '复制代码');
+                btn.innerHTML = `
+                    <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                `;
+
+                // 使用闭包保存 codeEl 引用
+                const codeElement = codeEl;
+                const preElement = pre;
+
+                btn.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const codeText = codeElement ? codeElement.textContent : preElement.textContent;
+
+                    try {
+                        await navigator.clipboard.writeText(codeText);
+
+                        // 显示成功状态
+                        const copyIcon = btn.querySelector('.copy-icon');
+                        const checkIcon = btn.querySelector('.check-icon');
+                        copyIcon.style.display = 'none';
+                        checkIcon.style.display = 'block';
+                        btn.classList.add('copied');
+
+                        showToast('代码已复制');
+
+                        setTimeout(() => {
+                            copyIcon.style.display = 'block';
+                            checkIcon.style.display = 'none';
+                            btn.classList.remove('copied');
+                        }, 2000);
+                    } catch (err) {
+                        // 降级方案：使用 execCommand
+                        const textarea = document.createElement('textarea');
+                        textarea.value = codeText;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        try {
+                            document.execCommand('copy');
+                            showToast('代码已复制');
+                        } catch (e) {
+                            showToast('复制失败，请手动复制');
+                        }
+                        document.body.removeChild(textarea);
+                    }
+                });
+
+                pre.appendChild(btn);
+            });
+        }
+
+        async function loadRelatedArticles(articleId) {
+            try {
+                const { data } = await api(`/articles/${articleId}/related`);
+                const container = document.getElementById('related-list');
+                if (data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(article => `
+                        <a href="/article.html?id=${article.id}" class="related-item">
+                            <span class="related-item-title">${article.title}</span>
+                            <span class="related-item-date">${new Date(article.created_at).toLocaleDateString('zh-CN')}</span>
+                        </a>
+                    `).join('');
+                } else {
+                    document.getElementById('related-articles').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Load related articles failed:', error);
+            }
+        }
+
+        function shareToWeibo() {
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent(document.title);
+            window.open(`https://service.weibo.com/share/share.php?url=${url}&title=${title}`, '_blank');
+        }
+
+        function shareToTwitter() {
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent(document.title);
+            window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, '_blank');
+        }
+
+        async function copyLink() {
+            const url = window.location.href;
+            try {
+                // 尝试使用现代 API
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(url);
+                    showToast('链接已复制到剪贴板');
+                } else {
+                    // 降级方案：使用 execCommand
+                    const textarea = document.createElement('textarea');
+                    textarea.value = url;
+                    textarea.style.position = 'fixed';
+                    textarea.style.left = '-9999px';
+                    textarea.style.top = '0';
+                    document.body.appendChild(textarea);
+                    textarea.focus();
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        showToast('链接已复制到剪贴板');
+                    } catch (err) {
+                        showToast('复制失败，请手动复制', 'error');
+                    }
+                    document.body.removeChild(textarea);
+                }
+            } catch (err) {
+                console.error('Copy failed:', err);
+                showToast('复制失败，请手动复制', 'error');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification toast-success show';
+            toast.innerHTML = `<span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        // 阅读进度条
+        function initReadingProgress() {
+            const progressBar = document.getElementById('reading-progress');
+            if (!progressBar) return;
+
+            window.addEventListener('scroll', () => {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                const progress = (scrollTop / scrollHeight) * 100;
+                progressBar.style.width = progress + '%';
+            });
+        }
+
+        // 返回顶部按钮
+        function initBackToTop() {
+            const backToTopBtn = document.getElementById('back-to-top');
+            if (!backToTopBtn) return;
+
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    backToTopBtn.classList.add('visible');
+                } else {
+                    backToTopBtn.classList.remove('visible');
+                }
+            });
+
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleId = urlParams.get('id') || urlParams.get('slug');
+            if (articleId) {
+                currentArticleId = articleId;
+                await loadArticle(articleId);
+                await loadComments(articleId);
+                await checkLikeFavoriteStatus(articleId);
+                await recordHistory(articleId);
+                await loadRelatedArticles(articleId);
+                addCopyButtons();
+                initImageLightbox(); // 初始化图片放大预览
+            }
+
+            // 初始化阅读进度条和返回顶部
+            initReadingProgress();
+            initBackToTop();
+        });
+
+        // 图片放大预览功能
+        function initImageLightbox() {
+            const content = document.querySelector('.article-detail-content');
+            if (!content) return;
+
+            const images = content.querySelectorAll('img');
+            if (images.length === 0) return;
+
+            // 创建 lightbox 容器
+            const lightbox = document.createElement('div');
+            lightbox.className = 'image-lightbox';
+            lightbox.innerHTML = `
+                <button class="image-lightbox-close" aria-label="关闭">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <button class="image-lightbox-nav image-lightbox-prev" aria-label="上一张">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <button class="image-lightbox-nav image-lightbox-next" aria-label="下一张">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+                <div class="image-lightbox-counter"></div>
+                <img src="" alt="">
+            `;
+            document.body.appendChild(lightbox);
+
+            const lightboxImg = lightbox.querySelector('img');
+            const closeBtn = lightbox.querySelector('.image-lightbox-close');
+            const prevBtn = lightbox.querySelector('.image-lightbox-prev');
+            const nextBtn = lightbox.querySelector('.image-lightbox-next');
+            const counter = lightbox.querySelector('.image-lightbox-counter');
+
+            let currentIndex = 0;
+
+            const showImage = (index) => {
+                currentIndex = index;
+                lightboxImg.src = images[index].src;
+                lightboxImg.alt = images[index].alt || '';
+                counter.textContent = `${index + 1} / ${images.length}`;
+                prevBtn.style.display = images.length > 1 ? 'flex' : 'none';
+                nextBtn.style.display = images.length > 1 ? 'flex' : 'none';
+            };
+
+            const openLightbox = (index) => {
+                showImage(index);
+                lightbox.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            };
+
+            const closeLightbox = () => {
+                lightbox.classList.remove('show');
+                document.body.style.overflow = '';
+            };
+
+            // 点击图片打开
+            images.forEach((img, index) => {
+                img.addEventListener('click', () => openLightbox(index));
+            });
+
+            // 关闭按钮
+            closeBtn.addEventListener('click', closeLightbox);
+
+            // 点击背景关闭
+            lightbox.addEventListener('click', (e) => {
+                if (e.target === lightbox) closeLightbox();
+            });
+
+            // 上一张/下一张
+            prevBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showImage((currentIndex - 1 + images.length) % images.length);
+            });
+
+            nextBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showImage((currentIndex + 1) % images.length);
+            });
+
+            // 键盘控制
+            document.addEventListener('keydown', (e) => {
+                if (!lightbox.classList.contains('show')) return;
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') showImage((currentIndex - 1 + images.length) % images.length);
+                if (e.key === 'ArrowRight') showImage((currentIndex + 1) % images.length);
+            });
+        }
+    </script>
+</body>
+</html>
