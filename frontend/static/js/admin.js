@@ -1,3 +1,5 @@
+console.log('=== ADMIN.JS LOADED - VERSION 2 ===');
+
 // 显示 toast 提示
 function showToast(message, type = 'success') {
     // 移除已存在的 toast
@@ -35,7 +37,8 @@ let easyMDE;
 let editingArticleId = null;
 let currentFormat = 'html'; // 当前编辑器格式: html 或 markdown
 let allTags = []; // 存储所有标签
-let selectedTagIds = []; // 存储选中的标签ID
+let selectedTagIds = []; // 存储选中的标签ID (文章)
+let selectedHtmlPageTagIds = []; // 存储选中的标签ID (HTML页面)
 
 // 自动保存相关变量
 let autoSaveTimer = null;
@@ -284,6 +287,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load initial data
     loadAdminArticles();
+    loadAdminHtmlPages();
     loadAdminCategories();
     loadAdminComments();
     loadAllTagsForSelect(); // 加载标签用于选择
@@ -294,8 +298,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAboutSettings(); // 加载关于页面设置
 
     // Setup event listeners
+    console.log('Setting up event listeners...');
     setupTabs();
+    console.log('Tabs setup complete');
     setupModals();
+    console.log('Modals setup complete');
     setupForms();
     setupLogout();
 });
@@ -329,68 +336,74 @@ function setupTabs() {
 
 // Setup modals
 function setupModals() {
+    console.log('setupModals function called');
+
     // Article modal
     const articleModal = document.getElementById('article-modal');
     const newArticleBtn = document.getElementById('new-article-btn');
     const closeModalBtn = document.getElementById('close-modal');
     const cancelBtn = document.getElementById('cancel-btn');
 
-    newArticleBtn.addEventListener('click', () => {
-        editingArticleId = null;
-        document.getElementById('modal-title').textContent = '新建文章';
-        document.getElementById('article-form').reset();
-        document.getElementById('article-pinned').checked = false;
+    console.log('Article modal elements:', { articleModal, newArticleBtn });
 
-        // 重置编辑器格式为富文本
-        document.getElementById('article-format').value = 'html';
-        switchEditor('html');
+    if (newArticleBtn) {
+        newArticleBtn.addEventListener('click', () => {
+            editingArticleId = null;
+            document.getElementById('modal-title').textContent = '新建文章';
+            document.getElementById('article-form').reset();
+            document.getElementById('article-pinned').checked = false;
 
-        // 清空编辑器内容
-        quill.setContents([]);
-        easyMDE.value('');
+            // 重置编辑器格式为富文本
+            document.getElementById('article-format').value = 'html';
+            switchEditor('html');
 
-        // 重置标签选择
-        selectedTagIds = [];
-        updateTagsSelection();
+            // 清空编辑器内容
+            quill.setContents([]);
+            easyMDE.value('');
 
-        // 重置自动保存状态
-        updateAutoSaveStatus('', '自动保存已就绪');
-        lastSavedContent = '';
-        lastSavedTitle = '';
+            // 重置标签选择
+            selectedTagIds = [];
+            updateTagsSelection();
 
-        // 隐藏草稿恢复横幅
-        const banner = document.getElementById('draft-recovery-banner');
-        if (banner) banner.classList.add('hidden');
+            // 重置自动保存状态
+            updateAutoSaveStatus('', '自动保存已就绪');
+            lastSavedContent = '';
+            lastSavedTitle = '';
 
-        // 检查是否有未保存的草稿
-        const draft = checkForDraft();
-        if (draft) {
-            // 草稿恢复按钮事件
-            const restoreBtn = document.getElementById('restore-draft-btn');
-            const discardBtn = document.getElementById('discard-draft-btn');
+            // 隐藏草稿恢复横幅
+            const banner = document.getElementById('draft-recovery-banner');
+            if (banner) banner.classList.add('hidden');
 
-            if (restoreBtn) {
-                restoreBtn.onclick = () => {
-                    restoreDraftData(draft);
-                    banner.classList.add('hidden');
-                    startAutoSave();
-                    updateAutoSaveStatus('saved', '草稿已恢复');
-                };
+            // 检查是否有未保存的草稿
+            const draft = checkForDraft();
+            if (draft) {
+                // 草稿恢复按钮事件
+                const restoreBtn = document.getElementById('restore-draft-btn');
+                const discardBtn = document.getElementById('discard-draft-btn');
+
+                if (restoreBtn) {
+                    restoreBtn.onclick = () => {
+                        restoreDraftData(draft);
+                        banner.classList.add('hidden');
+                        startAutoSave();
+                        updateAutoSaveStatus('saved', '草稿已恢复');
+                    };
+                }
+
+                if (discardBtn) {
+                    discardBtn.onclick = () => {
+                        clearDraft();
+                        banner.classList.add('hidden');
+                        startAutoSave();
+                    };
+                }
+            } else {
+                startAutoSave();
             }
 
-            if (discardBtn) {
-                discardBtn.onclick = () => {
-                    clearDraft();
-                    banner.classList.add('hidden');
-                    startAutoSave();
-                };
-            }
-        } else {
-            startAutoSave();
-        }
-
-        articleModal.classList.add('show');
-    });
+            articleModal.classList.add('show');
+        });
+    }
 
     const closeModal = () => {
         articleModal.classList.remove('show');
@@ -418,6 +431,13 @@ function setupModals() {
     // Friend modal
     setupModal('friend', 'new-friend-btn');
 
+    console.log('About to setup HTML Page modal');
+
+    // HTML Page modal
+    setupModal('htmlpage', 'new-htmlpage-btn');
+
+    console.log('HTML Page modal setup complete');
+
     // Close on backdrop click
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
@@ -437,13 +457,34 @@ function setupModal(name, newBtnId) {
     const closeBtn = document.getElementById(`close-${name}-modal`);
     const cancelBtn = document.getElementById(`cancel-${name}-btn`);
 
+    console.log(`setupModal called for ${name}, modal:`, modal, 'btn:', newBtn);
+
+    if (!modal) {
+        console.warn(`Modal not found: ${name}-modal`);
+        return;
+    }
+
     if (newBtn) {
         newBtn.addEventListener('click', () => {
-            document.getElementById(`${name}-modal-title`).textContent = `新建${getChineseName(name)}`;
-            document.getElementById(`${name}-form`).reset();
-            document.getElementById(`${name}-id`).value = '';
+            console.log(`Button clicked for ${name}`);
+            const titleEl = document.getElementById(`${name}-modal-title`);
+            const formEl = document.getElementById(`${name}-form`);
+            const idEl = document.getElementById(`${name}-id`);
+
+            if (titleEl) titleEl.textContent = `新建${getChineseName(name)}`;
+            if (formEl) formEl.reset();
+            if (idEl) idEl.value = '';
+
+            // 重置HTML页面的分类和标签选择
+            if (name === 'htmlpage') {
+                selectedHtmlPageTagIds = [];
+                updateHtmlPageTagsSelection();
+            }
+
             modal.classList.add('show');
         });
+    } else {
+        console.warn(`Button not found: ${newBtnId}`);
     }
 
     [closeBtn, cancelBtn].forEach(btn => {
@@ -460,7 +501,8 @@ function getChineseName(name) {
         'category': '分类',
         'tag': '标签',
         'announcement': '公告',
-        'friend': '友链'
+        'friend': '友链',
+        'htmlpage': 'HTML页面'
     };
     return names[name] || name;
 }
@@ -599,6 +641,30 @@ function setupForms() {
         };
         await handleFormSubmit('friend', id, data, 'friend-links');
     });
+
+    // HTML Page form
+    document.getElementById('htmlpage-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('htmlpage-id').value;
+
+        // 获取标签名称
+        const tagNames = selectedHtmlPageTagIds.map(id => {
+            const tag = allTags.find(t => t.id === id);
+            return tag ? tag.name : '';
+        }).filter(Boolean).join(',');
+
+        const data = {
+            title: document.getElementById('htmlpage-title').value,
+            slug: document.getElementById('htmlpage-slug').value,
+            summary: document.getElementById('htmlpage-summary').value,
+            cover_image: document.getElementById('htmlpage-cover').value,
+            content: document.getElementById('htmlpage-content').value,
+            category_id: parseInt(document.getElementById('htmlpage-category').value) || 0,
+            tags: tagNames,
+            is_published: document.getElementById('htmlpage-published').checked
+        };
+        await handleFormSubmit('htmlpage', id, data, 'html-pages');
+    });
 }
 
 async function handleFormSubmit(name, id = null, customData = null, apiPath = null) {
@@ -645,6 +711,7 @@ async function handleFormSubmit(name, id = null, customData = null, apiPath = nu
             }
             else if (name === 'announcement') loadAdminAnnouncements();
             else if (name === 'friend') loadAdminFriends();
+            else if (name === 'htmlpage') loadAdminHtmlPages();
         } else {
             showToast('操作失败：' + (response.data.error || '未知错误'), 'error');
         }
@@ -713,6 +780,7 @@ async function loadAdminArticles(page = 1) {
 async function loadAdminCategories() {
     const tbody = document.getElementById('categories-table-body');
     const select = document.getElementById('article-category');
+    const htmlpageSelect = document.getElementById('htmlpage-category');
 
     try {
         const { data } = await api('/categories');
@@ -734,10 +802,16 @@ async function loadAdminCategories() {
             `).join('');
         }
 
+        const categoryOptions = data.data.map(category =>
+            `<option value="${category.id}">${category.name}</option>`
+        ).join('');
+
         if (select) {
-            select.innerHTML = data.data.map(category =>
-                `<option value="${category.id}">${category.name}</option>`
-            ).join('');
+            select.innerHTML = categoryOptions;
+        }
+
+        if (htmlpageSelect) {
+            htmlpageSelect.innerHTML = categoryOptions;
         }
     } catch (error) {
         console.error('Failed to load categories:', error);
@@ -864,6 +938,145 @@ async function loadAdminFriends() {
     } catch (error) {
         console.error('Failed to load friends:', error);
     }
+}
+
+// Load admin HTML pages
+async function loadAdminHtmlPages(page = 1) {
+    const tbody = document.getElementById('htmlpages-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">加载中...</td></tr>';
+
+    try {
+        const { data } = await api(`/admin/html-pages/all?page=${page}&page_size=10`);
+
+        if (data.data && data.data.length > 0) {
+            tbody.innerHTML = data.data.map(htmlpage => `
+                <tr>
+                    <td>${htmlpage.id}</td>
+                    <td>${htmlpage.title}</td>
+                    <td>${htmlpage.category ? htmlpage.category.name : '-'}</td>
+                    <td>
+                        <span class="status-badge ${htmlpage.is_published ? 'status-published' : 'status-draft'}">
+                            ${htmlpage.is_published ? '已发布' : '草稿'}
+                        </span>
+                    </td>
+                    <td>${htmlpage.view_count || 0}</td>
+                    <td>${new Date(htmlpage.created_at).toLocaleDateString('zh-CN')}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-sm btn-outline" onclick="editHtmlPage(${htmlpage.id})">编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteHtmlPage(${htmlpage.id})">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">暂无HTML页面</td></tr>';
+        }
+
+        // Update pagination
+        const paginationEl = document.getElementById('htmlpages-pagination');
+        if (paginationEl && data.pagination) {
+            let paginationHtml = '';
+            for (let i = 1; i <= data.pagination.total_page; i++) {
+                paginationHtml += `<button class="${i === page ? 'active' : ''}" onclick="loadAdminHtmlPages(${i})">${i}</button>`;
+            }
+            paginationEl.innerHTML = paginationHtml;
+        }
+    } catch (error) {
+        console.error('Failed to load HTML pages:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">暂无HTML页面</td></tr>';
+    }
+}
+
+// Edit HTML page
+async function editHtmlPage(id) {
+    try {
+        const { data } = await api(`/html-pages/${id}`);
+        const htmlpage = data.data;
+
+        document.getElementById('htmlpage-modal-title').textContent = '编辑HTML页面';
+        document.getElementById('htmlpage-id').value = id;
+        document.getElementById('htmlpage-title').value = htmlpage.title;
+        document.getElementById('htmlpage-slug').value = htmlpage.slug || '';
+        document.getElementById('htmlpage-summary').value = htmlpage.summary || '';
+        document.getElementById('htmlpage-cover').value = htmlpage.cover_image || '';
+        document.getElementById('htmlpage-content').value = htmlpage.content || '';
+        document.getElementById('htmlpage-category').value = htmlpage.category_id || '';
+        document.getElementById('htmlpage-published').checked = htmlpage.is_published;
+
+        // 恢复标签选择
+        selectedHtmlPageTagIds = [];
+        if (htmlpage.tags) {
+            const tagNames = htmlpage.tags.split(',').map(t => t.trim()).filter(Boolean);
+            selectedHtmlPageTagIds = tagNames.map(name => {
+                const tag = allTags.find(t => t.name === name);
+                return tag ? tag.id : null;
+            }).filter(id => id !== null);
+        }
+        updateHtmlPageTagsSelection();
+
+        document.getElementById('htmlpage-modal').classList.add('show');
+    } catch (error) {
+        console.error('Failed to load HTML page:', error);
+        showToast('加载HTML页面失败', 'error');
+    }
+}
+
+// Delete HTML page
+async function deleteHtmlPage(id) {
+    if (!confirm('确定要删除这个HTML页面吗？')) return;
+
+    try {
+        const { response } = await api(`/admin/html-pages/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            showToast('HTML页面已删除');
+            loadAdminHtmlPages();
+        }
+    } catch (error) {
+        showToast('删除失败', 'error');
+    }
+}
+
+// 导入 HTML 文件
+function importHtmlFile() {
+    const fileInput = document.getElementById('htmlpage-file');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showToast('请先选择一个HTML文件', 'error');
+        return;
+    }
+
+    // 检查文件类型
+    if (!file.name.match(/\.(html|htm)$/i)) {
+        showToast('请选择 .html 或 .htm 文件', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+
+        // 填充内容到文本框
+        document.getElementById('htmlpage-content').value = content;
+
+        // 尝试从 HTML 中提取标题
+        const titleMatch = content.match(/<title[^>]*>([^<]+)<\/title>/i);
+        if (titleMatch && titleMatch[1]) {
+            const titleField = document.getElementById('htmlpage-title');
+            if (!titleField.value) {
+                titleField.value = titleMatch[1].trim();
+            }
+        }
+
+        showToast('文件导入成功！');
+    };
+    reader.onerror = function() {
+        showToast('文件读取失败', 'error');
+    };
+    reader.readAsText(file);
 }
 
 // Load admin stats
@@ -1290,6 +1503,7 @@ async function loadAllTagsForSelect() {
         const { data } = await api('/tags');
         allTags = data.data || [];
         renderTagsSelection();
+        renderHtmlPageTagsSelection();
     } catch (error) {
         console.error('Failed to load tags for select:', error);
     }
@@ -1344,6 +1558,64 @@ function updateTagsSelection() {
     container.querySelectorAll('.tag-checkbox').forEach(label => {
         const tagId = parseInt(label.dataset.tagId);
         if (selectedTagIds.includes(tagId)) {
+            label.classList.add('checked');
+            label.querySelector('input').checked = true;
+        } else {
+            label.classList.remove('checked');
+            label.querySelector('input').checked = false;
+        }
+    });
+}
+
+// 渲染HTML页面标签选择器
+function renderHtmlPageTagsSelection() {
+    const container = document.getElementById('htmlpage-tags-container');
+    if (!container) return;
+
+    if (allTags.length === 0) {
+        container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">暂无标签，请先在标签管理中创建</span>';
+        return;
+    }
+
+    container.innerHTML = allTags.map(tag => `
+        <label class="tag-checkbox ${selectedHtmlPageTagIds.includes(tag.id) ? 'checked' : ''}" data-tag-id="${tag.id}">
+            <input type="checkbox" value="${tag.id}" ${selectedHtmlPageTagIds.includes(tag.id) ? 'checked' : ''}>
+            <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            ${tag.name}
+        </label>
+    `).join('');
+
+    // 绑定点击事件
+    container.querySelectorAll('.tag-checkbox').forEach(label => {
+        label.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tagId = parseInt(label.dataset.tagId);
+            toggleHtmlPageTagSelection(tagId);
+        });
+    });
+}
+
+// 切换HTML页面标签选择
+function toggleHtmlPageTagSelection(tagId) {
+    const index = selectedHtmlPageTagIds.indexOf(tagId);
+    if (index > -1) {
+        selectedHtmlPageTagIds.splice(index, 1);
+    } else {
+        selectedHtmlPageTagIds.push(tagId);
+    }
+    updateHtmlPageTagsSelection();
+}
+
+// 更新HTML页面标签选择的UI状态
+function updateHtmlPageTagsSelection() {
+    const container = document.getElementById('htmlpage-tags-container');
+    if (!container) return;
+
+    container.querySelectorAll('.tag-checkbox').forEach(label => {
+        const tagId = parseInt(label.dataset.tagId);
+        if (selectedHtmlPageTagIds.includes(tagId)) {
             label.classList.add('checked');
             label.querySelector('input').checked = true;
         } else {
@@ -1541,6 +1813,48 @@ async function aiGenerateSummary() {
     try {
         const summary = await aiAssistant.generateSummary(content);
         document.getElementById('article-summary').value = summary;
+        showToast('摘要已生成');
+    } catch (error) {
+        showToast('生成摘要失败：' + error.message, 'error');
+    } finally {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    }
+}
+
+// AI 生成 HTML 页面摘要
+async function aiGenerateHtmlPageSummary() {
+    if (!aiAssistant || !aiAssistant.enabled) {
+        showToast('AI 功能未启用', 'error');
+        return;
+    }
+
+    const content = document.getElementById('htmlpage-content').value;
+
+    if (!content.trim()) {
+        showToast('请先输入HTML内容', 'error');
+        return;
+    }
+
+    // 设置加载状态
+    const btn = event.target;
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '生成中...';
+    btn.disabled = true;
+
+    try {
+        // 从 HTML 内容中提取纯文本用于生成摘要
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        const plainText = tempDiv.textContent || tempDiv.innerText || '';
+
+        if (!plainText.trim()) {
+            showToast('HTML内容中没有可提取的文本', 'error');
+            return;
+        }
+
+        const summary = await aiAssistant.generateSummary(plainText);
+        document.getElementById('htmlpage-summary').value = summary;
         showToast('摘要已生成');
     } catch (error) {
         showToast('生成摘要失败：' + error.message, 'error');

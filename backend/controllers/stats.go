@@ -99,8 +99,19 @@ func (sc *StatsController) RecordView(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "View recorded"})
 }
 
+// archiveItem 用于统一排序文章和HTML页面
+type archiveItem struct {
+	ID        uint
+	Title     string
+	Slug      string
+	CreatedAt time.Time
+	Category  models.Category
+	Type      string
+}
+
 // GetArchive 获取文章归档
 func (sc *StatsController) GetArchive(c *gin.Context) {
+	// 获取文章
 	var articles []models.Article
 	sc.DB.Where("is_published = ?", true).
 		Select("id, title, slug, created_at, category_id").
@@ -108,22 +119,65 @@ func (sc *StatsController) GetArchive(c *gin.Context) {
 		Order("created_at DESC").
 		Find(&articles)
 
+	// 获取HTML页面
+	var htmlPages []models.HtmlPage
+	sc.DB.Where("is_published = ?", true).
+		Select("id, title, slug, created_at, category_id").
+		Preload("Category").
+		Order("created_at DESC").
+		Find(&htmlPages)
+
+	// 合并文章和HTML页面，统一按时间排序
+	var allItems []archiveItem
+	for _, article := range articles {
+		allItems = append(allItems, archiveItem{
+			ID:        article.ID,
+			Title:     article.Title,
+			Slug:      article.Slug,
+			CreatedAt: article.CreatedAt,
+			Category:  article.Category,
+			Type:      "article",
+		})
+	}
+	for _, htmlPage := range htmlPages {
+		allItems = append(allItems, archiveItem{
+			ID:        htmlPage.ID,
+			Title:     htmlPage.Title,
+			Slug:      htmlPage.Slug,
+			CreatedAt: htmlPage.CreatedAt,
+			Category:  htmlPage.Category,
+			Type:      "htmlpage",
+		})
+	}
+
+	// 按创建时间降序排序
+	for i := 0; i < len(allItems); i++ {
+		for j := i + 1; j < len(allItems); j++ {
+			if allItems[i].CreatedAt.Before(allItems[j].CreatedAt) {
+				allItems[i], allItems[j] = allItems[j], allItems[i]
+			}
+		}
+	}
+
 	// 按年月分组
 	archive := make(map[string]map[string][]gin.H)
-	for _, article := range articles {
-		year := article.CreatedAt.Format("2006")
-		month := article.CreatedAt.Format("01月")
+
+	// 添加到归档
+	for _, item := range allItems {
+		year := item.CreatedAt.Format("2006")
+		month := item.CreatedAt.Format("01月")
 
 		if archive[year] == nil {
 			archive[year] = make(map[string][]gin.H)
 		}
 
 		archive[year][month] = append(archive[year][month], gin.H{
-			"id":         article.ID,
-			"title":      article.Title,
-			"slug":       article.Slug,
-			"created_at": article.CreatedAt,
-			"category":   article.Category,
+			"id":         item.ID,
+			"title":      item.Title,
+			"slug":       item.Slug,
+			"created_at": item.CreatedAt,
+			"category":   item.Category,
+			"type":       item.Type,
 		})
 	}
 

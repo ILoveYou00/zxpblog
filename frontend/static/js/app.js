@@ -207,6 +207,20 @@ async function loadArticles() {
 
         const { data } = await api(url);
 
+        // 同时加载 HTML 页面（仅在第一页且没有筛选条件时）
+        let htmlPages = [];
+        if (currentPage === 1 && !currentTag && !currentCategory && !currentSearch) {
+            try {
+                const htmlRes = await api('/html-pages?page=1&page_size=20');
+                htmlPages = (htmlRes.data.data || []).map((hp) => ({
+                    ...hp,
+                    _type: 'htmlpage'
+                }));
+            } catch (e) {
+                console.error('Failed to load HTML pages:', e);
+            }
+        }
+
         if (currentPage === 1) {
             container.innerHTML = '';
         }
@@ -221,9 +235,18 @@ async function loadArticles() {
             pagination = data.pagination;
         }
 
-        if (articles && articles.length > 0) {
-            articles.forEach((article, index) => {
-                const card = createArticleCard(article);
+        // 为文章添加类型标识
+        articles = (articles || []).map(a => ({ ...a, _type: 'article' }));
+
+        // 合并文章和 HTML 页面，按时间排序
+        let allItems = [...articles, ...htmlPages];
+        allItems.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        if (allItems && allItems.length > 0) {
+            allItems.forEach((item, index) => {
+                const card = item._type === 'htmlpage'
+                    ? createHtmlPageCard(item)
+                    : createArticleCard(item);
                 card.style.animationDelay = `${index * 0.1}s`;
                 container.appendChild(card);
             });
@@ -337,6 +360,67 @@ function createArticleCard(article) {
                     </svg>
                     ${article.read_time} 分钟
                 </span>` : ''}
+            </div>
+        </div>
+    `;
+
+    return card;
+}
+
+// 创建 HTML 页面卡片
+function createHtmlPageCard(htmlpage) {
+    const card = document.createElement('article');
+    card.className = 'article-card';
+    card.style.cursor = 'pointer';
+
+    // 点击时在新窗口打开
+    card.onclick = () => {
+        window.open(`/html-viewer.html?id=${htmlpage.id}`, '_blank');
+    };
+
+    // 图片懒加载
+    const coverHtml = htmlpage.cover_image
+        ? `<img data-src="${htmlpage.cover_image}" alt="${htmlpage.title}" class="article-cover lazy-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect fill='%23f1f5f9' width='400' height='200'/%3E%3C/svg%3E">`
+        : `<div class="article-cover-placeholder">${htmlpage.title.charAt(0)}</div>`;
+
+    const categoryName = htmlpage.category ? htmlpage.category.name : 'HTML';
+    const date = new Date(htmlpage.created_at).toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    card.innerHTML = `
+        ${coverHtml}
+        <div class="article-content">
+            <span class="article-category">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                ${categoryName}
+            </span>
+            <h2 class="article-title">${htmlpage.title}</h2>
+            <div class="article-summary-wrapper">
+                <p class="article-summary">${htmlpage.summary || ''}</p>
+                ${htmlpage.summary && htmlpage.summary.length > 60 ? `<div class="article-summary-tooltip">${htmlpage.summary}</div>` : ''}
+            </div>
+            <div class="article-meta">
+                <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    ${date}
+                </span>
+                <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    ${htmlpage.view_count || 0}
+                </span>
             </div>
         </div>
     `;

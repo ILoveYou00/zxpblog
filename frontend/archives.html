@@ -10,6 +10,19 @@
         /* 防止暗色模式闪白 */
         html { visibility: hidden; }
         html.theme-loaded { visibility: visible; }
+        /* HTML页面类型标签 */
+        .archive-article-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+        .archive-article-type.htmlpage {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: white;
+        }
     </style>
     <script>
         (function() {
@@ -100,10 +113,18 @@
                                         <ul class="archive-articles">
                                             ${month.articles.map(article => `
                                                 <li class="archive-article">
-                                                    <a href="/article.html?id=${article.id}" class="archive-article-link">
-                                                        <span class="archive-article-date">${new Date(article.created_at).toLocaleDateString('zh-CN')}</span>
-                                                        <span class="archive-article-title">${article.title}</span>
-                                                    </a>
+                                                    ${article.type === 'htmlpage' ? `
+                                                        <a href="/html-viewer.html?id=${article.id}" class="archive-article-link" target="_blank">
+                                                            <span class="archive-article-date">${new Date(article.created_at).toLocaleDateString('zh-CN')}</span>
+                                                            <span class="archive-article-title">${article.title}</span>
+                                                            <span class="archive-article-type htmlpage">HTML</span>
+                                                        </a>
+                                                    ` : `
+                                                        <a href="/article.html?id=${article.id}" class="archive-article-link">
+                                                            <span class="archive-article-date">${new Date(article.created_at).toLocaleDateString('zh-CN')}</span>
+                                                            <span class="archive-article-title">${article.title}</span>
+                                                        </a>
+                                                    `}
                                                 </li>
                                             `).join('')}
                                         </ul>

@@ -1,7 +1,7 @@
 // Tech Blog Service Worker
-const CACHE_NAME = 'tech-blog-v1';
-const STATIC_CACHE = 'tech-blog-static-v1';
-const DYNAMIC_CACHE = 'tech-blog-dynamic-v1';
+const CACHE_NAME = 'tech-blog-v2';
+const STATIC_CACHE = 'tech-blog-static-v2';
+const DYNAMIC_CACHE = 'tech-blog-dynamic-v2';
 
 // 需要缓存的静态资源
 const STATIC_ASSETS = [

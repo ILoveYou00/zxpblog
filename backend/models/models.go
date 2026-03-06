@@ -173,6 +173,24 @@ type OAuthConnection struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+// HtmlPage 导入的HTML页面
+type HtmlPage struct {
+	ID          uint           `json:"id" gorm:"primaryKey"`
+	Title       string         `json:"title" gorm:"size:200;not null;index"`
+	Slug        string         `json:"slug" gorm:"uniqueIndex;size:200"`
+	Content     string         `json:"content" gorm:"type:longtext"` // 完整 HTML 内容
+	Summary     string         `json:"summary" gorm:"size:500"`
+	CoverImage  string         `json:"cover_image" gorm:"size:255"`
+	CategoryID  uint           `json:"category_id" gorm:"index"`
+	Category    Category       `json:"category"`
+	Tags        string         `json:"tags" gorm:"size:255"` // 逗号分隔的标签名
+	ViewCount   int            `json:"view_count" gorm:"default:0"`
+	IsPublished bool           `json:"is_published" gorm:"default:false;index"`
+	CreatedAt   time.Time      `json:"created_at" gorm:"index"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+}
+
 // HashPassword hashes a password using bcrypt
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

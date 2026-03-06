@@ -49,6 +49,7 @@ func Setup(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	aboutCtrl := controllers.NewAboutController(db)
 	aiCtrl := controllers.NewAIController(cfg, db)
 	oauthCtrl := controllers.NewOAuthController(cfg, db)
+	htmlCtrl := controllers.NewHtmlPageController(db)
 
 	// API routes
 	api := r.Group("/api")
@@ -93,6 +94,10 @@ func Setup(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 		// 关于页面
 		api.GET("/about", aboutCtrl.GetAbout)
+
+		// HTML页面
+		api.GET("/html-pages", htmlCtrl.GetHtmlPages)
+		api.GET("/html-pages/:id", htmlCtrl.GetHtmlPage)
 
 		// AI 功能
 		api.GET("/ai/status", aiCtrl.GetAIStatus)
@@ -162,6 +167,12 @@ func Setup(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 			// About
 			admin.PUT("/about", aboutCtrl.UpdateAbout)
+
+			// HTML Pages
+			admin.GET("/html-pages/all", htmlCtrl.GetAllHtmlPages)
+			admin.POST("/html-pages", htmlCtrl.CreateHtmlPage)
+			admin.PUT("/html-pages/:id", htmlCtrl.UpdateHtmlPage)
+			admin.DELETE("/html-pages/:id", htmlCtrl.DeleteHtmlPage)
 
 			// AI 写作助手（管理员）
 			admin.POST("/ai/writing", aiCtrl.WritingAssist)

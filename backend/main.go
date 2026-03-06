@@ -31,7 +31,7 @@ func main() {
 		&models.Like{}, &models.Favorite{}, &models.ReadHistory{},
 		&models.Tag{}, &models.ArticleTag{}, &models.FriendLink{},
 		&models.Announcement{}, &models.Media{}, &models.SiteStat{},
-		&models.About{}, &models.OAuthConnection{},
+		&models.About{}, &models.OAuthConnection{}, &models.HtmlPage{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)

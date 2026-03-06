@@ -94,6 +94,7 @@
             <!-- Admin Tabs -->
             <div class="admin-tabs">
                 <button class="admin-tab active" data-tab="articles">文章管理</button>
+                <button class="admin-tab" data-tab="htmlpages">HTML管理</button>
                 <button class="admin-tab" data-tab="categories">分类管理</button>
                 <button class="admin-tab" data-tab="tags">标签管理</button>
                 <button class="admin-tab" data-tab="comments">评论管理</button>
@@ -128,6 +129,32 @@
                     </table>
                 </div>
                 <div class="pagination" id="articles-pagination"></div>
+            </div>
+
+            <!-- HTML Pages Tab -->
+            <div class="admin-content hidden" id="htmlpages-tab">
+                <div class="admin-header-row">
+                    <h2>HTML页面列表</h2>
+                    <button id="new-htmlpage-btn" class="btn btn-primary">新建HTML页面</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>标题</th>
+                                <th>分类</th>
+                                <th>状态</th>
+                                <th>浏览量</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="htmlpages-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="htmlpages-pagination"></div>
             </div>
 
             <!-- Categories Tab -->
@@ -660,6 +687,84 @@
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-outline" id="cancel-friend-btn">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- HTML Page Modal -->
+    <div class="modal" id="htmlpage-modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="htmlpage-modal-title">新建HTML页面</h3>
+                <button class="modal-close" id="close-htmlpage-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="htmlpage-form">
+                    <input type="hidden" id="htmlpage-id">
+                    <div class="form-group">
+                        <label>导入HTML文件</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="file" id="htmlpage-file" accept=".html,.htm" style="flex: 1;">
+                            <button type="button" class="btn btn-outline" onclick="importHtmlFile()">导入文件</button>
+                        </div>
+                        <small style="color: var(--text-muted); margin-top: 4px; display: block;">支持 .html, .htm 文件</small>
+                    </div>
+                    <div style="border-bottom: 1px solid var(--border-color); margin: 16px 0;"></div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="htmlpage-title">标题</label>
+                            <input type="text" id="htmlpage-title" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="htmlpage-slug">Slug (URL友好标识)</label>
+                            <input type="text" id="htmlpage-slug" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="htmlpage-category">分类</label>
+                            <select id="htmlpage-category" class="form-input">
+                                <option value="">选择分类</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>标签</label>
+                            <div id="htmlpage-tags-container" class="tags-select-container">
+                                <!-- 标签复选框将在这里动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="htmlpage-summary">摘要</label>
+                        <div class="summary-row">
+                            <textarea id="htmlpage-summary" class="form-textarea" rows="2"></textarea>
+                            <button type="button" class="btn btn-outline ai-summary-btn" onclick="aiGenerateHtmlPageSummary()" title="AI 生成摘要">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                                    <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+                                </svg>
+                                AI生成
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="htmlpage-cover">封面图片URL</label>
+                        <input type="text" id="htmlpage-cover" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="htmlpage-content">HTML内容</label>
+                        <textarea id="htmlpage-content" class="form-textarea" rows="15" style="font-family: monospace; font-size: 13px;" placeholder="粘贴HTML代码或从文件导入..."></textarea>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="htmlpage-published">
+                            <span>发布</span>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-htmlpage-btn">取消</button>
                         <button type="submit" class="btn btn-primary">保存</button>
                     </div>
                 </form>
