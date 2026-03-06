@@ -755,6 +755,7 @@ async function loadAdminArticles(page = 1) {
                 <td>${new Date(article.created_at).toLocaleDateString('zh-CN')}</td>
                 <td>
                     <div class="action-btns">
+                        <button class="btn btn-sm btn-outline" onclick="previewArticle(${article.id})">预览</button>
                         <button class="btn btn-sm btn-outline" onclick="editArticle(${article.id})">编辑</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteArticle(${article.id})">删除</button>
                     </div>
@@ -965,6 +966,7 @@ async function loadAdminHtmlPages(page = 1) {
                     <td>${new Date(htmlpage.created_at).toLocaleDateString('zh-CN')}</td>
                     <td>
                         <div class="action-btns">
+                            <button class="btn btn-sm btn-outline" onclick="previewHtmlPage(${htmlpage.id})">预览</button>
                             <button class="btn btn-sm btn-outline" onclick="editHtmlPage(${htmlpage.id})">编辑</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteHtmlPage(${htmlpage.id})">删除</button>
                         </div>
@@ -988,6 +990,11 @@ async function loadAdminHtmlPages(page = 1) {
         console.error('Failed to load HTML pages:', error);
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">暂无HTML页面</td></tr>';
     }
+}
+
+// Preview HTML page
+function previewHtmlPage(id) {
+    window.open(`/html-viewer.html?id=${id}`, '_blank');
 }
 
 // Edit HTML page
@@ -1124,6 +1131,11 @@ async function loadAdminStats() {
     } catch (error) {
         console.error('Failed to load stats:', error);
     }
+}
+
+// Preview article
+function previewArticle(id) {
+    window.open(`/article.html?id=${id}`, '_blank');
 }
 
 // Edit article
