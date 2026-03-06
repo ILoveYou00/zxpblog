@@ -1321,13 +1321,13 @@ function renderHotArticles(articles) {
     const container = document.getElementById('hot-articles-list');
     if (!container) return;
 
-    if (articles.length === 0) {
+    if (!articles || articles.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据</div>';
         return;
     }
 
     container.innerHTML = articles.map((article, index) => `
-        <div class="hot-article-item">
+        <div class="hot-article-item" onclick="goToArticle('${article.type}', ${article.id})">
             <div class="hot-article-info">
                 <span class="article-rank ${index < 3 ? 'rank-' + (index + 1) : ''}">${index + 1}</span>
                 <span class="hot-article-title">${article.title}</span>
@@ -1337,18 +1337,27 @@ function renderHotArticles(articles) {
     `).join('');
 }
 
+// 跳转到文章详情
+function goToArticle(type, id) {
+    if (type === 'htmlpage') {
+        window.open(`/html-viewer.html?id=${id}`, '_blank');
+    } else {
+        window.open(`/article.html?id=${id}`, '_blank');
+    }
+}
+
 // 渲染最新文章
 function renderLatestArticles(articles) {
     const container = document.getElementById('latest-articles-list');
     if (!container) return;
 
-    if (articles.length === 0) {
+    if (!articles || articles.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据</div>';
         return;
     }
 
     container.innerHTML = articles.map(article => `
-        <div class="latest-article-item">
+        <div class="latest-article-item" onclick="goToArticle('${article.type}', ${article.id})">
             <div class="latest-article-info">
                 <span class="latest-article-title">${article.title}</span>
             </div>

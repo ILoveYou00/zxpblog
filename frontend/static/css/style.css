@@ -3945,6 +3945,7 @@ pre:hover .copy-btn {
     background: var(--bg-secondary);
     border-radius: var(--radius);
     transition: var(--transition);
+    cursor: pointer;
 }
 
 .hot-article-item:hover,

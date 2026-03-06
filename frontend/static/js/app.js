@@ -6,6 +6,37 @@ let currentTag = '';
 let currentSearch = '';
 let totalPages = 1;
 
+// 记录访问
+async function recordVisit() {
+    try {
+        // 使用 localStorage 判断是否是新访客（长期有效）
+        const visitorKey = 'blog_visitor_id';
+        const today = new Date().toDateString();
+        const sessionKey = 'visit_recorded_' + today;
+
+        // 检查今天是否已经记录过访问
+        const lastRecorded = sessionStorage.getItem(sessionKey);
+        if (lastRecorded) {
+            return;
+        }
+
+        // 检查是否是新访客
+        const visitorId = localStorage.getItem(visitorKey);
+        const isNewVisitor = !visitorId;
+
+        // 如果是新访客，生成一个唯一标识
+        if (isNewVisitor) {
+            localStorage.setItem(visitorKey, 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
+        }
+
+        await api('/stats/record?new_visitor=' + isNewVisitor, { method: 'POST' });
+        sessionStorage.setItem(sessionKey, 'true');
+    } catch (error) {
+        // 静默失败，不影响用户体验
+        console.error('Failed to record visit:', error);
+    }
+}
+
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -893,6 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCommentForm();
     initSmoothScroll();
     initParallaxEffect();
+    recordVisit(); // 记录访问
 
     if (document.getElementById('articles-container')) {
         // 检查是否有保存的滚动位置

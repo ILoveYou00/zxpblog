@@ -35,13 +35,79 @@ func (sc *StatsController) GetStats(c *gin.Context) {
 	var todayStats models.SiteStat
 	sc.DB.Where("date = ?", today).First(&todayStats)
 
-	// 热门文章
+	// 热门文章（包含文章和HTML页面）
 	var hotArticles []models.Article
 	sc.DB.Where("is_published = ?", true).Order("view_count DESC").Limit(5).Find(&hotArticles)
 
-	// 最新文章
+	var hotHtmlPages []models.HtmlPage
+	sc.DB.Where("is_published = ?", true).Order("view_count DESC").Limit(5).Find(&hotHtmlPages)
+
+	// 合并热门内容
+	type HotItem struct {
+		ID        uint   `json:"id"`
+		Title     string `json:"title"`
+		ViewCount int    `json:"view_count"`
+		Type      string `json:"type"`
+	}
+	var hotItems []HotItem
+	for _, a := range hotArticles {
+		hotItems = append(hotItems, HotItem{
+			ID: a.ID, Title: a.Title, ViewCount: a.ViewCount, Type: "article",
+		})
+	}
+	for _, h := range hotHtmlPages {
+		hotItems = append(hotItems, HotItem{
+			ID: h.ID, Title: h.Title, ViewCount: h.ViewCount, Type: "htmlpage",
+		})
+	}
+	// 按浏览量排序，取前5
+	for i := 0; i < len(hotItems); i++ {
+		for j := i + 1; j < len(hotItems); j++ {
+			if hotItems[j].ViewCount > hotItems[i].ViewCount {
+				hotItems[i], hotItems[j] = hotItems[j], hotItems[i]
+			}
+		}
+	}
+	if len(hotItems) > 5 {
+		hotItems = hotItems[:5]
+	}
+
+	// 最新文章（包含文章和HTML页面）
 	var latestArticles []models.Article
 	sc.DB.Where("is_published = ?", true).Order("created_at DESC").Limit(5).Find(&latestArticles)
+
+	var latestHtmlPages []models.HtmlPage
+	sc.DB.Where("is_published = ?", true).Order("created_at DESC").Limit(5).Find(&latestHtmlPages)
+
+	// 合并最新内容
+	type LatestItem struct {
+		ID        uint      `json:"id"`
+		Title     string    `json:"title"`
+		CreatedAt time.Time `json:"created_at"`
+		Type      string    `json:"type"`
+	}
+	var latestItems []LatestItem
+	for _, a := range latestArticles {
+		latestItems = append(latestItems, LatestItem{
+			ID: a.ID, Title: a.Title, CreatedAt: a.CreatedAt, Type: "article",
+		})
+	}
+	for _, h := range latestHtmlPages {
+		latestItems = append(latestItems, LatestItem{
+			ID: h.ID, Title: h.Title, CreatedAt: h.CreatedAt, Type: "htmlpage",
+		})
+	}
+	// 按时间排序，取前5
+	for i := 0; i < len(latestItems); i++ {
+		for j := i + 1; j < len(latestItems); j++ {
+			if latestItems[j].CreatedAt.After(latestItems[i].CreatedAt) {
+				latestItems[i], latestItems[j] = latestItems[j], latestItems[i]
+			}
+		}
+	}
+	if len(latestItems) > 5 {
+		latestItems = latestItems[:5]
+	}
 
 	// 最近7天访问趋势
 	var weeklyStats []models.SiteStat
@@ -67,8 +133,8 @@ func (sc *StatsController) GetStats(c *gin.Context) {
 			"today_visitors":  todayStats.VisitorCount,
 			"tag_count":       tagCount,
 			"category_count":  categoryCount,
-			"hot_articles":    hotArticles,
-			"latest_articles": latestArticles,
+			"hot_articles":    hotItems,
+			"latest_articles": latestItems,
 			"weekly_stats":    weeklyStats,
 		},
 	})
@@ -77,6 +143,10 @@ func (sc *StatsController) GetStats(c *gin.Context) {
 // RecordView 记录访问
 func (sc *StatsController) RecordView(c *gin.Context) {
 	today := time.Now().Format("2006-01-02")
+
+	// 检查是否是新访客（基于 session）
+	session := c.Query("new_visitor")
+	isNewVisitor := session == "true"
 
 	// 更新或创建今日统计
 	var stats models.SiteStat
@@ -91,9 +161,14 @@ func (sc *StatsController) RecordView(c *gin.Context) {
 		sc.DB.Create(&stats)
 	} else {
 		// 更新访问量
-		sc.DB.Model(&stats).Updates(map[string]interface{}{
+		updates := map[string]interface{}{
 			"view_count": gorm.Expr("view_count + 1"),
-		})
+		}
+		// 如果是新访客，也更新访客数
+		if isNewVisitor {
+			updates["visitor_count"] = gorm.Expr("visitor_count + 1")
+		}
+		sc.DB.Model(&stats).Updates(updates)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "View recorded"})

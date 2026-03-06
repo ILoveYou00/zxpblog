@@ -90,6 +90,7 @@ func Setup(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 		// 统计
 		api.GET("/stats", statsCtrl.GetStats)
+		api.POST("/stats/record", statsCtrl.RecordView)
 		api.GET("/archives", statsCtrl.GetArchive)
 
 		// 关于页面
